@@ -1,3 +1,90 @@
-﻿@page "/"
+﻿@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Text.Json
 
-<h1>Hello, world!</h1>
+@inject HttpClient Http
+
+@page "/"
+<MudContainer MaxWidth="MaxWidth.Small">
+    <MudPaper Class="pa-16 ma-2" Elevation="0">
+        <MudText Style="font-size: 50px;">SkyWatch</MudText>
+        <MudTextField Class="mt-5" Label="Latitude" T="double" Placeholder="Latitude" @bind-Value="latitude"/>
+        <MudTextField Class="mt-5" Label="Longitude" T="double" Placeholder="Longitude" @bind-Value="longitude"/>
+        @if(showError == true)
+        {
+            <MudText Class="mud-secondary-text">ERROR: Latitude can only be between -90 to 90 and Longitude can only be between -180 to 180.</MudText>
+        }
+        <MudButton Class="mt-5" Color="Color.Primary" Variant="Variant.Filled" OnClick="OnButtonClick">Search</MudButton>
+    </MudPaper>
+</MudContainer>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+        @if (weatherData != null && posted == true)  // Checks if data exists
+        
+    {
+                <MudText Style="font-size: 25px;">Data for @size entries</MudText>
+
+                // For each of the timeseries, it will loop through. Giving the table different types of data.
+                <MudTable Items="weatherData.properties.timeseries" Color="Color.Primary">
+                    <HeaderContent>
+                        <MudTh>Time</MudTh>
+                        <MudTh>Temperature</MudTh>
+                        <MudTh>Wind speed</MudTh>
+                        <MudTh>Humidity</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Nr">@context.time</MudTd>
+                        <MudTd DataLabel="Time">@context.data.instant.details.air_temperature ℃</MudTd>
+                        <MudTd DataLabel="Wind">@context.data.instant.details.wind_speed m/s</MudTd>
+                        <MudTd DataLabel="Humidity">@context.data.instant.details.relative_humidity%</MudTd>
+                        
+                    </RowTemplate>
+
+                </MudTable>
+                
+                // Nullify to avoid that data reappears.
+                weatherData = null;
+            }
+</MudContainer>
+    
+@code {
+    // Variables
+    public double latitude { get; set; }
+    public double longitude { get; set; }
+    public int size { get; set; }
+    public bool posted { get; set; }
+    public bool showError { get; set; }
+
+    private WeatherData? weatherData;
+    // When clicked, send input values to baseURL to form a request URL
+    protected async Task OnButtonClick()
+    {
+        // Latitude can't extend 90 and longitude can't extend 180
+        if(latitude <= 90 && longitude <= 180)
+        {
+            if(latitude >= -90 && longitude >= -180)
+            {
+                showError = false;
+                var baseURL = "https://api.met.no/weatherapi/locationforecast/2.0/compact?";
+                var modifiedURL = baseURL + "lat=" + latitude + "&lon=" + longitude;
+                using var client = new HttpClient();
+                Console.WriteLine(modifiedURL);
+
+                // Get API call then deserialize data
+                var result = await client.GetStringAsync(modifiedURL);
+
+                weatherData = JsonSerializer.Deserialize<WeatherData>(result);
+                size = weatherData.properties.timeseries.Length;
+                posted = true;
+            } else
+            {
+                showError = true;
+            }             
+        } else
+        {
+            showError = true;
+        }
+
+    }
+
+}
