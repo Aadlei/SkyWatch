@@ -1,9 +1,7 @@
-/* Shared classes can be referenced by both the Client and Server */
-
-
 using Microsoft.JSInterop;
 using System.Text.Json;
 
+// Weather Root Data
 public class WeatherData
 {
     public Geometry geometry { get; set; }
@@ -11,12 +9,15 @@ public class WeatherData
     public string type { get; set; }
 }
 
+
+
 public class Geometry
 {
     public float[] coordinates { get; set; }
     public string type { get; set; }
 }
 
+// Properties of the data
 public class Properties
 {
     public Meta meta { get; set; }
